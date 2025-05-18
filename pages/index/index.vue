@@ -25,6 +25,8 @@ export default {
 				sourceType: ['album', 'camera']
 			});
 
+			// TODO: 这里要改成接口上传
+
 			const filePath = res.tempFilePaths[0];
 			const fileName = res.tempFiles[0].name;
 			const uploadRes = await uniCloud.uploadFile({
