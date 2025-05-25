@@ -5,6 +5,8 @@
 // images云对象的getImages方法
 // https://fc-mp-901c2eda-ac99-48e4-af67-19411b9d7eb7.next.bspapp.com/images/getImages
 
+const sharp = require('sharp');
+
 module.exports = {
 	_before: function () { // 通用预处理器
 
@@ -38,19 +40,44 @@ module.exports = {
 	async uploadImage({ fileContent, fileName }) {
 		const buffer = Buffer.from(fileContent, 'base64');
 
-		// https://doc.dcloud.net.cn/uniCloud/storage/dev.html#clouduploadfile
+		// 获取图片信息
+		const metadata = await sharp(buffer).metadata();
+		const resolution = {
+			width: metadata.width,
+			height: metadata.height
+		}
+
+		// 生成缩略图
+		const thumbnailBuffer = await sharp(buffer)
+			.resize(200, 200, {
+				fit: 'inside',
+				withoutEnlargement: true
+			})
+			.toBuffer();
+
+		// 上传原图
 		const { fileID } = await uniCloud.uploadFile({
 			cloudPathAsRealPath: true,
 			cloudPath: `images/${fileName}`,
 			fileContent: buffer
 		});
 
+		// 上传缩略图
+		const { fileID: thumbnailFileID } = await uniCloud.uploadFile({
+			cloudPathAsRealPath: true,
+			cloudPath: `images/thumbnail_${fileName}`,
+			fileContent: thumbnailBuffer
+		});
+
 		// 将图片信息保存到数据库中
 		const db = uniCloud.database();
 		await db.collection('images').add({
-			url: fileID,
 			fileName,
 			createTime: new Date(),
+			originalUrl: fileID,
+			thumbnailUrl: thumbnailFileID,
+			category: '',
+			resolution
 		});
 
 		return {
@@ -58,6 +85,7 @@ module.exports = {
 			data: {
 				fileName,
 				url: fileID,
+				thumbnailUrl: thumbnailFileID
 			}
 		};
 	},

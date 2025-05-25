@@ -13,9 +13,9 @@ export default {
 	},
 	onLoad() {
 		const images = uniCloud.importObject('images')
-		images.getImages().then(res => {
-			console.log('所有用户数据', res)
-		})
+		// images.getImages().then(res => {
+		// 	console.log('所有用户数据', res)
+		// })
 	},
 	methods: {
 		async chooseAndUpload() {
@@ -23,7 +23,7 @@ export default {
 				const { tempFiles } = await uni.chooseImage({
 					count: 1, // 默认9，设置为1表示一次只能选择一张图片
 					sizeType: ['original'], // 可以指定是原图还是压缩图，默认二者都有
-					sourceType: ['album', 'camera'] // 从相册选择或使用相机
+					sourceType: ['album', 'camera'], // 从相册选择或使用相机
 				});
 
 				if (tempFiles.length > 0) {
