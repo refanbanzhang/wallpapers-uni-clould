@@ -12,8 +12,8 @@ export default {
 		}
 	},
 	onLoad() {
-		const images = uniCloud.importObject('images')
-		// images.getImages().then(res => {
+		const image = uniCloud.importObject('image')
+		// image.getImages().then(res => {
 		// 	console.log('所有用户数据', res)
 		// })
 	},
@@ -27,7 +27,7 @@ export default {
 				});
 
 				if (tempFiles.length > 0) {
-					const images = uniCloud.importObject('images')
+					const image = uniCloud.importObject('image')
 					const file = tempFiles[0]
 
 					// 使用FileReader读取文件并转换为base64
@@ -41,7 +41,7 @@ export default {
 						reader.readAsDataURL(file)
 					})
 
-					await images.uploadImage({
+					await image.uploadImage({
 						fileContent: base64,
 						fileName: file.name
 					})

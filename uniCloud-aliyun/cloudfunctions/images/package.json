@@ -1,9 +1,0 @@
-{
-  "name": "images",
-  "dependencies": {
-    "sharp": "^0.34.2"
-  },
-  "extensions": {
-    "uni-cloud-jql": {}
-  }
-}

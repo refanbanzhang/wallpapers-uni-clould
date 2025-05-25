@@ -1,0 +1,14 @@
+{
+	"name": "images",
+	"type": "module",
+	"dependencies": {
+		"jimp": "^0.22.10",
+		"sharp": "^0.34.2"
+	},
+	"extensions": {
+		"uni-cloud-jql": {}
+	},
+	"cloudfunction-config": {
+		"runtime": "Nodejs18"
+	}
+}
