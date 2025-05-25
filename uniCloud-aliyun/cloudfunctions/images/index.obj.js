@@ -37,14 +37,28 @@ module.exports = {
 	 */
 	async uploadImage({ fileContent, fileName }) {
 		const buffer = Buffer.from(fileContent, 'base64');
-		const res = await uniCloud.uploadFile({
+
+		// https://doc.dcloud.net.cn/uniCloud/storage/dev.html#clouduploadfile
+		const { fileID } = await uniCloud.uploadFile({
+			cloudPathAsRealPath: true,
 			cloudPath: `images/${fileName}`,
 			fileContent: buffer
 		});
+
+		// 将图片信息保存到数据库中
+		const db = uniCloud.database();
+		await db.collection('images').add({
+			url: fileID,
+			fileName,
+			createTime: new Date(),
+		});
+
 		return {
 			code: 0,
-			fileID: res.fileID,
-			url: res.url // 仅腾讯云/阿里云部分版本支持
+			data: {
+				fileName,
+				url: fileID,
+			}
 		};
 	},
 }

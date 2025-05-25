@@ -19,25 +19,44 @@ export default {
 	},
 	methods: {
 		async chooseAndUpload() {
-			const res = await uni.chooseImage({
-				count: 1,
-				sizeType: ['original', 'compressed'],
-				sourceType: ['album', 'camera']
-			});
+			try {
+				const { tempFiles } = await uni.chooseImage({
+					count: 1, // 默认9，设置为1表示一次只能选择一张图片
+					sizeType: ['original'], // 可以指定是原图还是压缩图，默认二者都有
+					sourceType: ['album', 'camera'] // 从相册选择或使用相机
+				});
 
-			// TODO: 这里要改成接口上传
+				if (tempFiles.length > 0) {
+					const images = uniCloud.importObject('images')
+					const file = tempFiles[0]
 
-			const filePath = res.tempFilePaths[0];
-			const fileName = res.tempFiles[0].name;
-			const uploadRes = await uniCloud.uploadFile({
-				cloudPath: 'images/' + fileName,
-				filePath
-			});
+					// 使用FileReader读取文件并转换为base64
+					const base64 = await new Promise((resolve, reject) => {
+						const reader = new FileReader()
+						reader.onload = (e) => {
+							const base64Data = e.target.result.split(',')[1]
+							resolve(base64Data)
+						}
+						reader.onerror = reject
+						reader.readAsDataURL(file)
+					})
 
-			if (uploadRes.fileID) {
-				uni.showToast({ title: '上传成功', icon: 'success' });
-			} else {
-				uni.showToast({ title: '上传失败', icon: 'none' });
+					await images.uploadImage({
+						fileContent: base64,
+						fileName: file.name
+					})
+
+					uni.showToast({
+						title: '上传成功',
+						icon: 'success'
+					})
+				}
+			} catch (e) {
+				console.error(e)
+				uni.showToast({
+					title: '上传失败',
+					icon: 'error'
+				})
 			}
 		}
 	}
