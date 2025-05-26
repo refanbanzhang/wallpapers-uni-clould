@@ -48,17 +48,12 @@ module.exports = {
 		};
 
 		// 生成缩略图
-		// sharp: .resize(200, 200, { fit: 'inside', withoutEnlargement: true })
-		// jimp: contain(200, 200) 对应 fit: 'inside'.
-		// 添加逻辑处理 withoutEnlargement: true
 		const thumbnailImage = image.clone(); // 操作前克隆图像
 		if (thumbnailImage.bitmap.width > 200 || thumbnailImage.bitmap.height > 200) {
 			thumbnailImage.contain({ w: 200, h: 200 }); // 使用选项对象
 		}
-		// 如果图像已小于200x200，则通过上述if判断后，保持不变。
 
 		// 获取缩略图的buffer
-		// Jimp.JimpMime.jpeg 会提供 'image/jpeg' 字符串
 		const thumbnailBuffer = await thumbnailImage.getBuffer(Jimp.JimpMime.jpeg); // 使用 getBuffer 和正确的MIME类型
 
 		// 上传原图
