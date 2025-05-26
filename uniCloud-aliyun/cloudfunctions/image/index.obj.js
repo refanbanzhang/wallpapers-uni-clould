@@ -37,7 +37,58 @@ module.exports = {
 	 * @param {string} fileName 文件名（如 xxx.jpg）
 	 * @returns {object} 上传结果
 	 */
-	async uploadImage({ fileContent, fileName }) {
+	async uploadImage() {
+		const httpInfo = this.getHttpInfo()
+		let bodyString = httpInfo.body;
+		let params = {};
+
+		// 检查是否 Base64 编码
+		if (httpInfo.isBase64Encoded && bodyString) {
+			bodyString = Buffer.from(bodyString, 'base64').toString('utf8');
+		}
+
+		// 默认处理 JSON 格式
+		if (bodyString) {
+			try {
+				// 检查 Content-Type 是否为 application/json
+				// uniCloud 在某些情况下可能已经解析了 JSON，或者 bodyString 仍然是字符串
+				// 如果 httpInfo.body 直接就是对象，uniCloud 已经处理了 Content-Type application/json
+				if (typeof bodyString === 'string' && httpInfo.headers && httpInfo.headers['content-type'] && httpInfo.headers['content-type'].toLowerCase().includes('application/json')) {
+					params = JSON.parse(bodyString);
+				} else if (typeof bodyString === 'object') { // 如果 uniCloud 已经解析了 body
+					params = bodyString;
+				} else {
+					console.warn("Request body is a string but Content-Type is not application/json, or body could not be parsed as an object. Raw body string:", bodyString);
+					// 尝试从 queryStringParameters 作为备选方案
+					if (httpInfo.queryStringParameters) {
+						params = httpInfo.queryStringParameters;
+					}
+				}
+			} catch (e) {
+				console.error("Error parsing request body:", e);
+				console.error("Raw body string before parsing:", bodyString);
+				return {
+					code: 400, // Bad Request
+					message: "无效的请求体格式",
+					error: e.message
+				};
+			}
+		} else if (httpInfo.queryStringParameters) { // 如果 body 为空，尝试从 query string 获取
+			params = httpInfo.queryStringParameters;
+		}
+
+
+		const fileContent = params.fileContent;
+		const fileName = params.fileName;
+
+		if (!fileContent || !fileName) {
+			console.error("Missing fileContent or fileName in request.", "Received params:", params, "Raw HTTP Info:", httpInfo);
+			return {
+				code: 400, // Bad Request
+				message: "缺少必需的参数 fileContent 或 fileName"
+			};
+		}
+
 		const buffer = Buffer.from(fileContent, 'base64');
 
 		// 使用 jimp 处理图片 (Jimp 变量是 require('jimp') 返回的模块对象)
