@@ -141,4 +141,81 @@ module.exports = {
 			}
 		};
 	},
+
+	/**
+	 * 删除图片
+	 * @param {string} id 图片ID
+	 * @returns {object} 删除结果
+	 */
+	async removeImage() {
+		const httpInfo = this.getHttpInfo();
+		const { id } = JSON.parse(httpInfo.body)
+
+		if (!id) {
+			console.error("Missing id in request for removeImage.");
+			return {
+				code: 400,
+				message: "缺少必需的参数 id"
+			};
+		}
+
+		const db = uniCloud.database();
+
+		try {
+			// 1. 从数据库查询图片信息，获取 fileID
+			const imageRecord = await db.collection('images').where({ _id: id }).get();
+
+			if (!imageRecord.data || imageRecord.data.length === 0) {
+				return {
+					code: 404,
+					message: "数据库中未找到该图片记录"
+				};
+			}
+
+			const originalUrl = imageRecord.data[0].originalUrl;
+			const thumbnailUrl = imageRecord.data[0].thumbnailUrl;
+
+			// 2. 删除云存储中的文件 (原图和缩略图)
+			const deletePromises = [];
+			if (originalUrl) {
+				deletePromises.push(uniCloud.deleteFile({ fileList: [originalUrl] }));
+			}
+			if (thumbnailUrl) {
+				deletePromises.push(uniCloud.deleteFile({ fileList: [thumbnailUrl] }));
+			}
+
+			const deleteResults = await Promise.all(deletePromises);
+
+			// 检查删除结果
+			deleteResults.forEach(result => {
+				if (result.fileList && result.fileList.length > 0) {
+					result.fileList.forEach(item => {
+						if (item.code !== 0 && item.code !== 'SUCCESS') { // uniCloud 的成功码可能是 'SUCCESS' 或 0
+							// 可以记录部分删除失败的日志，但通常即使部分失败，数据库记录也应删除
+							console.warn(`Failed to delete file ${item.fileID || item.url} from cloud storage: ${item.message || item.errMsg}`);
+						}
+					});
+				}
+			});
+
+			// 3. 从数据库删除记录
+			await db.collection('images').where({ _id: id }).remove();
+
+			return {
+				code: 0,
+				message: "图片删除成功",
+				data: {
+					id
+				}
+			};
+
+		} catch (error) {
+			console.error("Error deleting image:", error);
+			return {
+				code: 500, // Internal Server Error
+				message: "删除图片时发生服务器内部错误",
+				error: error.message
+			};
+		}
+	}
 }
