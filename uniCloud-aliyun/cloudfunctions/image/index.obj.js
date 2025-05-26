@@ -5,7 +5,7 @@
 // images云对象的getImages方法
 // https://fc-mp-901c2eda-ac99-48e4-af67-19411b9d7eb7.next.bspapp.com/images/getImages
 
-const sharp = require('sharp');
+const Jimp = require('jimp');
 
 module.exports = {
 	_before: function () { // 通用预处理器
@@ -40,20 +40,26 @@ module.exports = {
 	async uploadImage({ fileContent, fileName }) {
 		const buffer = Buffer.from(fileContent, 'base64');
 
-		// 获取图片信息
-		const metadata = await sharp(buffer).metadata();
+		// 使用 jimp 处理图片 (Jimp 变量是 require('jimp') 返回的模块对象)
+		const image = await Jimp.Jimp.read(buffer); // 您的修正是正确的
 		const resolution = {
-			width: metadata.width,
-			height: metadata.height
-		}
+			width: image.bitmap.width,
+			height: image.bitmap.height
+		};
 
 		// 生成缩略图
-		const thumbnailBuffer = await sharp(buffer)
-			.resize(200, 200, {
-				fit: 'inside',
-				withoutEnlargement: true
-			})
-			.toBuffer();
+		// sharp: .resize(200, 200, { fit: 'inside', withoutEnlargement: true })
+		// jimp: contain(200, 200) 对应 fit: 'inside'.
+		// 添加逻辑处理 withoutEnlargement: true
+		const thumbnailImage = image.clone(); // 操作前克隆图像
+		if (thumbnailImage.bitmap.width > 200 || thumbnailImage.bitmap.height > 200) {
+			thumbnailImage.contain({ w: 200, h: 200 }); // 使用选项对象
+		}
+		// 如果图像已小于200x200，则通过上述if判断后，保持不变。
+
+		// 获取缩略图的buffer
+		// Jimp.JimpMime.jpeg 会提供 'image/jpeg' 字符串
+		const thumbnailBuffer = await thumbnailImage.getBuffer(Jimp.JimpMime.jpeg); // 使用 getBuffer 和正确的MIME类型
 
 		// 上传原图
 		const { fileID } = await uniCloud.uploadFile({
