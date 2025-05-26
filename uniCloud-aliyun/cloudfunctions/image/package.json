@@ -1,6 +1,5 @@
 {
 	"name": "images",
-	"type": "module",
 	"dependencies": {
 		"jimp": "^1.6.0",
 		"sharp": "^0.34.2"
